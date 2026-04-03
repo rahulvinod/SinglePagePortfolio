@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rahul Vinod — Senior Game Designer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Playfair+Display:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --ink: #0a0a0a;
+  --off: #f5f2eb;
+  --accent: #ff3c1e;
+  --gold: #c8a96e;
+  --muted: #6b6660;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--off);
+  color: var(--ink);
+  font-family: 'DM Mono', monospace;
+  overflow-x: hidden;
+  cursor: none;
+}
+
+#cur {
+  position: fixed;
+  top: 0; left: 0;
+  width: 10px; height: 10px;
+  background: var(--accent);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transition: width 0.2s, height 0.2s;
+  will-change: transform;
+}
+#cur-ring {
+  position: fixed;
+  top: 0; left: 0;
+  width: 36px; height: 36px;
+  border: 1px solid rgba(10,10,10,0.3);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9998;
+  will-change: transform;
+  transition: width 0.25s, height 0.25s;
+}
+body.hovering #cur { width: 18px; height: 18px; }
+body.hovering #cur-ring { width: 54px; height: 54px; }
+
+.grid-bg {
+  position: fixed; inset: 0;
+  background-image: linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px);
+  background-size: 100% 80px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 500;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.2rem 3rem;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  background: rgba(245,242,235,0.9);
+  backdrop-filter: blur(14px);
+}
+.logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.1rem;
+  letter-spacing: 0.18em;
+  color: var(--ink);
+  text-decoration: none;
+}
+nav { display: flex; gap: 2.5rem; align-items: center; }
+nav a {
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+nav a:hover { color: var(--accent); }
+.nav-cta {
+  background: var(--ink);
+  color: var(--off) !important;
+  padding: 0.35rem 1rem;
+}
+.nav-cta:hover { background: var(--accent) !important; }
+
+/* HERO */
+.hero {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  min-height: 600px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 0 3rem 4rem;
+  overflow: hidden;
+  z-index: 1;
+}
+.hero-bg-num {
+  position: absolute;
+  top: 50%; right: -0.04em;
+  transform: translateY(-50%);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 38vw;
+  line-height: 1;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(0,0,0,0.05);
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+}
+.hero-eyebrow {
+  font-size: 0.62rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.6rem;
+  position: relative;
+  z-index: 2;
+  opacity: 0;
+  animation: fadeUp 0.7s ease 0.1s forwards;
+}
+.hero-eyebrow::before {
+  content: '';
+  width: 36px; height: 1px;
+  background: var(--accent);
+  display: block;
+  flex-shrink: 0;
+}
+.hero-title-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3.2rem, 7vw, 6.5rem);
+  line-height: 1;
+  letter-spacing: 0.04em;
+  position: relative;
+  z-index: 2;
+  margin-bottom: 0.12em;
+  opacity: 0;
+  animation: fadeUp 0.7s ease 0.25s forwards;
+}
+.hero-tagline {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3.5rem, 10vw, 9rem);
+  line-height: 0.88;
+  letter-spacing: 0.01em;
+  position: relative;
+  z-index: 2;
+  opacity: 0;
+  animation: fadeUp 0.8s ease 0.38s forwards;
+}
+.hero-tagline .controller {
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.hero-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(0,0,0,0.1);
+  position: relative;
+  z-index: 2;
+  opacity: 0;
+  animation: fadeUp 0.7s ease 0.6s forwards;
+}
+.hero-role {
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  line-height: 1.9;
+}
+.hero-role strong { display: block; color: var(--ink); font-weight: 500; }
+.hero-scroll {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.58rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.scroll-line {
+  width: 1px; height: 54px;
+  background: linear-gradient(to bottom, var(--ink), transparent);
+  animation: scrollAnim 1.8s ease-in-out infinite;
+}
+@keyframes scrollAnim {
+  0%   { opacity: 0; transform: scaleY(0); transform-origin: top; }
+  50%  { opacity: 1; transform: scaleY(1); transform-origin: top; }
+  100% { opacity: 0; transform: scaleY(1); transform-origin: bottom; }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* MARQUEE */
+.marquee-wrap {
+  overflow: hidden;
+  background: var(--ink);
+  padding: 0.9rem 0;
+  position: relative;
+  z-index: 2;
+}
+.marquee-track {
+  display: flex;
+  white-space: nowrap;
+  animation: marquee 22s linear infinite;
+}
+.marquee-item {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1rem;
+  letter-spacing: 0.18em;
+  color: rgba(245,242,235,0.4);
+  padding: 0 2.5rem;
+  flex-shrink: 0;
+}
+.marquee-item.hi { color: var(--accent); }
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* ABOUT */
+.about {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  position: relative;
+  z-index: 2;
+}
+.about-left {
+  padding: 5rem 3rem;
+  border-right: 1px solid rgba(0,0,0,0.1);
+}
+.about-right {
+  padding: 5rem 3rem;
+  background: var(--ink);
+  color: var(--off);
+}
+.section-label {
+  font-size: 0.58rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+.section-label::after {
+  content: '';
+  display: block;
+  width: 40px; height: 1px;
+  background: currentColor;
+  opacity: 0.3;
+}
+.about-heading {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(1.7rem, 3vw, 2.6rem);
+  line-height: 1.18;
+  font-weight: 400;
+  margin-bottom: 1.4rem;
+}
+.about-right .about-heading { color: var(--off); }
+.about-text {
+  font-size: 0.78rem;
+  line-height: 2;
+  color: var(--muted);
+  max-width: 380px;
+}
+.about-right .about-text { color: rgba(245,242,235,0.5); }
+.stat-row {
+  display: flex;
+  gap: 3rem;
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(0,0,0,0.08);
+}
+.about-right .stat-row { border-top-color: rgba(255,255,255,0.08); }
+.stat-number {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2.8rem;
+  line-height: 1;
+  color: var(--accent);
+  display: block;
+}
+.stat-label {
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 0.2rem;
+  display: block;
+}
+.about-right .stat-label { color: rgba(245,242,235,0.35); }
+
+/* SKILLS */
+.skills {
+  padding: 5rem 3rem;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  position: relative;
+  z-index: 2;
+}
+.skills-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 3rem;
+}
+.skills-heading {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3rem, 6vw, 5.5rem);
+  line-height: 1;
+}
+.skills-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: rgba(0,0,0,0.08);
+  border: 1px solid rgba(0,0,0,0.08);
+}
+.skill-card {
+  background: var(--off);
+  padding: 2rem 1.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.35s;
+}
+.skill-card::before {
+  content: attr(data-num);
+  position: absolute;
+  top: -0.1em; right: -0.05em;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 5.5rem;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(0,0,0,0.05);
+  line-height: 1;
+  pointer-events: none;
+  transition: -webkit-text-stroke-color 0.35s;
+}
+.skill-card:hover { background: var(--ink); }
+.skill-card:hover .skill-name { color: var(--off); }
+.skill-card:hover .skill-desc { color: rgba(245,242,235,0.45); }
+.skill-card:hover::before { -webkit-text-stroke-color: rgba(255,255,255,0.06); }
+.skill-bar { width: 24px; height: 2px; background: var(--accent); margin-bottom: 1.4rem; }
+.skill-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 1rem;
+  font-weight: 400;
+  margin-bottom: 0.6rem;
+  transition: color 0.35s;
+}
+.skill-desc {
+  font-size: 0.67rem;
+  line-height: 1.9;
+  color: var(--muted);
+  transition: color 0.35s;
+}
+
+/* EXPERIENCE */
+.experience {
+  padding: 5rem 3rem;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  position: relative;
+  z-index: 2;
+}
+.exp-grid {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 0 4rem;
+  margin-top: 3rem;
+}
+.exp-year {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1rem;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  padding: 1.6rem 0 1.6rem 1rem;
+  border-bottom: 1px solid rgba(0,0,0,0.07);
+  cursor: pointer;
+  transition: color 0.2s;
+  position: relative;
+}
+.exp-year::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 50%;
+  transform: translateY(-50%);
+  width: 3px; height: 0;
+  background: var(--accent);
+  transition: height 0.3s;
+}
+.exp-year.active, .exp-year:hover { color: var(--ink); }
+.exp-year.active::before { height: 45%; }
+.exp-content {
+  border-left: 1px solid rgba(0,0,0,0.1);
+  padding-left: 3rem;
+}
+.exp-entry { display: none; padding: 1.6rem 0; }
+.exp-entry.active { display: block; animation: fadeUp 0.4s ease forwards; }
+.exp-company {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2.2rem;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  margin-bottom: 0.35rem;
+}
+.exp-role-tag {
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 1.2rem;
+}
+.exp-desc {
+  font-size: 0.76rem;
+  line-height: 2;
+  color: var(--muted);
+  max-width: 500px;
+  margin-bottom: 1.5rem;
+}
+.exp-tags { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.tag {
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid rgba(0,0,0,0.14);
+  padding: 0.28rem 0.75rem;
+  color: var(--muted);
+  transition: all 0.2s;
+}
+.tag:hover { background: var(--ink); color: var(--off); border-color: var(--ink); }
+
+/* KRAFTON BAND */
+.k-band {
+  background: var(--ink);
+  padding: 4rem 3rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+  position: relative;
+  overflow: hidden;
+  z-index: 2;
+}
+.k-band::before {
+  content: 'KRAFTON';
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 19vw;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(255,255,255,0.035);
+  letter-spacing: 0.1em;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.k-left { position: relative; z-index: 2; }
+.k-label {
+  font-size: 0.58rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 1rem;
+}
+.k-heading {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(1.7rem, 3vw, 2.5rem);
+  color: var(--off);
+  font-weight: 400;
+  line-height: 1.25;
+  max-width: 400px;
+}
+.k-heading em { font-style: italic; color: var(--gold); }
+.k-right { position: relative; z-index: 2; text-align: right; }
+.k-meta {
+  font-size: 0.65rem;
+  color: rgba(245,242,235,0.3);
+  letter-spacing: 0.08em;
+  line-height: 2.2;
+}
+
+/* FOOTER */
+footer {
+  padding: 3rem 3rem 2.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-top: 1px solid rgba(0,0,0,0.1);
+  position: relative;
+  z-index: 2;
+}
+.footer-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
+  line-height: 0.95;
+}
+.footer-right {
+  text-align: right;
+  font-size: 0.67rem;
+  line-height: 2.3;
+  color: var(--muted);
+}
+.footer-right a {
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(0,0,0,0.2);
+  transition: color 0.2s, border-color 0.2s;
+}
+.footer-right a:hover { color: var(--accent); border-color: var(--accent); }
+
+/* SCROLL ANIMATIONS */
+.anim {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.75s ease, transform 0.75s ease;
+}
+.anim.in { opacity: 1; transform: none; }
+.anim-d1 { transition-delay: 0.1s; }
+.anim-d2 { transition-delay: 0.2s; }
+.anim-d3 { transition-delay: 0.3s; }
+
+@media (max-width: 900px) {
+  header { padding: 1rem 1.5rem; }
+  nav a:not(.nav-cta) { display: none; }
+  .hero { padding: 0 1.5rem 3rem; }
+  .about { grid-template-columns: 1fr; }
+  .about-left { border-right: none; border-bottom: 1px solid rgba(0,0,0,0.1); }
+  .skills-grid { grid-template-columns: 1fr 1fr; }
+  .skills, .experience { padding: 3rem 1.5rem; }
+  .exp-grid { grid-template-columns: 1fr; }
+  .exp-content { border-left: none; padding-left: 0; border-top: 1px solid rgba(0,0,0,0.1); padding-top: 1.5rem; }
+  .about-left, .about-right { padding: 3rem 1.5rem; }
+  .k-band { flex-direction: column; align-items: flex-start; }
+  .k-right { text-align: left; }
+  footer { flex-direction: column; align-items: flex-start; gap: 2rem; }
+  .footer-right { text-align: left; }
+}
+</style>
+</head>
+<body>
+
+<div id="cur"></div>
+<div id="cur-ring"></div>
+<div class="grid-bg"></div>
+
+<header>
+  <a href="#" class="logo">RV — Portfolio</a>
+  <nav>
+    <a href="#about">About</a>
+    <a href="#skills">Craft</a>
+    <a href="#experience">Journey</a>
+    <a href="#contact" class="nav-cta">Contact</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="hero-bg-num" aria-hidden="true">RV</div>
+  <div class="hero-eyebrow">Senior Game Designer</div>
+  <div class="hero-title-name">RAHUL VINOD</div>
+  <h1 class="hero-tagline">
+    CONCEPT<br>
+    TO<br>
+    <span class="controller">CONTROLLER.</span><br>
+    ALWAYS.
+  </h1>
+  <div class="hero-bottom">
+    <div class="hero-role">
+      <strong>Currently at Krafton India</strong>
+      Bengaluru — Senior Game Designer
+    </div>
+    <div class="hero-scroll">
+      <span>Scroll</span>
+      <div class="scroll-line"></div>
+    </div>
+  </div>
+</section>
+
+<div class="marquee-wrap" aria-hidden="true">
+  <div class="marquee-track">
+    <span class="marquee-item hi">✦ COMBAT SYSTEMS</span>
+    <span class="marquee-item">3C DESIGN</span>
+    <span class="marquee-item hi">✦ PVP BALANCING</span>
+    <span class="marquee-item">KRAFTON INDIA</span>
+    <span class="marquee-item hi">✦ AI / NPC DESIGN</span>
+    <span class="marquee-item">UNITY & UNREAL</span>
+    <span class="marquee-item hi">✦ MULTIPLAYER SYSTEMS</span>
+    <span class="marquee-item">LIVE OPS</span>
+    <span class="marquee-item hi">✦ KAIZEN</span>
+    <span class="marquee-item">RAPID PROTOTYPING</span>
+    <span class="marquee-item hi">✦ COMBAT SYSTEMS</span>
+    <span class="marquee-item">3C DESIGN</span>
+    <span class="marquee-item hi">✦ PVP BALANCING</span>
+    <span class="marquee-item">KRAFTON INDIA</span>
+    <span class="marquee-item hi">✦ AI / NPC DESIGN</span>
+    <span class="marquee-item">UNITY & UNREAL</span>
+    <span class="marquee-item hi">✦ MULTIPLAYER SYSTEMS</span>
+    <span class="marquee-item">LIVE OPS</span>
+    <span class="marquee-item hi">✦ KAIZEN</span>
+    <span class="marquee-item">RAPID PROTOTYPING</span>
+  </div>
+</div>
+
+<section class="about" id="about">
+  <div class="about-left">
+    <div class="section-label anim">About</div>
+    <h2 class="about-heading anim anim-d1">Designing the spaces between mechanics and wonder.</h2>
+    <p class="about-text anim anim-d2">Senior Game Designer specialising in multiplayer PvP, combat systems, and 3C design — across mobile, PC, and VR. I lead cross-functional pods, ship fast, and iterate with data.</p>
+    <div class="stat-row anim anim-d3">
+      <div>
+        <span class="stat-number">4+</span>
+        <span class="stat-label">Years in game design</span>
+      </div>
+      <div>
+        <span class="stat-number">15+</span>
+        <span class="stat-label">Multiplayer titles shipped</span>
+      </div>
+    </div>
+  </div>
+  <div class="about-right">
+    <div class="section-label anim" style="color:rgba(255,60,30,0.85)">Philosophy</div>
+    <h2 class="about-heading anim anim-d1">Kaizen — small, relentless improvements compound into great games.</h2>
+    <p class="about-text anim anim-d2">Every prototype teaches something a doc never could. I believe in shipping early, playing it honestly, and iterating without ego. Better by 1% every day beats perfect on paper every time.</p>
+    <div class="stat-row anim anim-d3">
+      <div>
+        <span class="stat-number" style="color:var(--gold)">改善</span>
+      </div>
+      <div>
+        <span class="stat-number" style="color:var(--gold)">72h</span>
+        <span class="stat-label">Prototype to playable</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="skills" id="skills">
+  <div class="skills-header anim">
+    <div>
+      <div class="section-label">Craft</div>
+      <h2 class="skills-heading">CORE<br>DISCIPLINES</h2>
+    </div>
+    <p style="font-size:0.72rem;color:var(--muted);max-width:260px;line-height:2;text-align:right">The full stack of game design — concept to controller, every time.</p>
+  </div>
+  <div class="skills-grid">
+    <div class="skill-card anim" data-num="01"><div class="skill-bar"></div><h3 class="skill-name">Combat Systems</h3><p class="skill-desc">PvP encounter feel — player controllers, hit feedback, weapon balance, and the rhythm of competitive play across PC and mobile.</p></div>
+    <div class="skill-card anim anim-d1" data-num="02"><div class="skill-bar"></div><h3 class="skill-name">3C Design</h3><p class="skill-desc">Character, Camera, Controls — the holy trinity of game feel. Movement and interaction systems that feel instinctive from frame one.</p></div>
+    <div class="skill-card anim anim-d2" data-num="03"><div class="skill-bar"></div><h3 class="skill-name">AI / NPC Design</h3><p class="skill-desc">Believable, challenging AI behaviours that teach without tutorialising and create memorable encounters.</p></div>
+    <div class="skill-card anim anim-d3" data-num="04"><div class="skill-bar"></div><h3 class="skill-name">Multiplayer Systems</h3><p class="skill-desc">End-to-end multiplayer design — social hubs, traversal, competitive loops, and shared player experiences.</p></div>
+    <div class="skill-card anim" data-num="05"><div class="skill-bar"></div><h3 class="skill-name">Live Ops & Balancing</h3><p class="skill-desc">Data-informed iteration post-launch. Analytics, telemetry, weekly updates, tuning economies for long-term retention.</p></div>
+    <div class="skill-card anim anim-d1" data-num="06"><div class="skill-bar"></div><h3 class="skill-name">Technical Design</h3><p class="skill-desc">C# scripting, visual scripting, Shadergraph, VFX Graph — bridging design intent and engineering reality in Unity and Unreal.</p></div>
+    <div class="skill-card anim anim-d2" data-num="07"><div class="skill-bar"></div><h3 class="skill-name">Team Leadership</h3><p class="skill-desc">Leading 5-person cross-functional pods. Mentoring junior designers, aligning engineers, artists, and animators.</p></div>
+    <div class="skill-card anim anim-d3" data-num="08"><div class="skill-bar"></div><h3 class="skill-name">Rapid Prototyping</h3><p class="skill-desc">Multiplayer prototypes in under 72 hours. Game jam veteran with a bias for building over planning.</p></div>
+  </div>
+</section>
+
+<section class="experience" id="experience">
+  <div class="section-label anim">Journey</div>
+  <div class="exp-grid anim anim-d1">
+    <div class="exp-timeline">
+      <div class="exp-year active" onclick="showExp(this,'exp1')">Krafton India</div>
+      <div class="exp-year" onclick="showExp(this,'exp2')">Terra</div>
+      <div class="exp-year" onclick="showExp(this,'exp3')">PlayShifu</div>
+    </div>
+    <div class="exp-content">
+      <div class="exp-entry active" id="exp1">
+        <div class="exp-company">KRAFTON INDIA</div>
+        <div class="exp-role-tag">Senior Game Designer — Present</div>
+        <p class="exp-desc">Currently crafting multiplayer and core gameplay systems at one of India's foremost game studios. Bringing expertise in PvP, combat design, and cross-functional team leadership to projects played by millions.</p>
+        <div class="exp-tags">
+          <span class="tag">PvP Systems</span><span class="tag">Combat Design</span><span class="tag">Live Service</span><span class="tag">Bengaluru</span>
+        </div>
+      </div>
+      <div class="exp-entry" id="exp2">
+        <div class="exp-company">TERRA</div>
+        <div class="exp-role-tag">Sr. Technical Game Designer — Jul 2023 – 2024</div>
+        <p class="exp-desc">Led a 5-person cross-functional pod from concept to live ops on 15+ shipped multiplayer titles — FPS, racing, sports, and party games. Owned core PvP gameplay: player controllers, movement mechanics, AI/NPC behaviours, and economy balancing.</p>
+        <div class="exp-tags">
+          <span class="tag">Multiplayer</span><span class="tag">3C Design</span><span class="tag">AI / NPC</span><span class="tag">Unity</span><span class="tag">Economy Balancing</span>
+        </div>
+      </div>
+      <div class="exp-entry" id="exp3">
+        <div class="exp-company">PLAYSHIFU</div>
+        <div class="exp-role-tag">Game Designer / Technical Game Designer — Jul 2021 – Jul 2023</div>
+        <p class="exp-desc">Designed multiplayer hub and traversal systems — minimap, fast travel, avatar customisation. Led a team of 5 building a cross-platform social hub. Delivered weekly live ops and designed VR party game mechanics for award-winning phygital toy kits.</p>
+        <div class="exp-tags">
+          <span class="tag">VR</span><span class="tag">Phygital</span><span class="tag">Social Hub</span><span class="tag">Live Ops</span><span class="tag">Team Lead</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="k-band">
+  <div class="k-left">
+    <div class="k-label">Current Studio</div>
+    <h2 class="k-heading">Building India's gaming future at <em>Krafton</em> — one design decision at a time.</h2>
+  </div>
+  <div class="k-right">
+    <div class="k-meta">Krafton India — Bengaluru<br>Senior Game Designer<br>Currently — Ongoing</div>
+  </div>
+</div>
+
+<footer id="contact">
+  <div>
+    <div class="footer-name">RAHUL<br>VINOD</div>
+    <div style="font-size:0.6rem;color:var(--muted);letter-spacing:0.1em;margin-top:0.8rem;text-transform:uppercase">Bengaluru, India — Senior Game Designer</div>
+  </div>
+  <div class="footer-right">
+    <div>Available for speaking, collaboration & consultation.</div>
+    <div style="margin-top:0.4rem"><a href="mailto:itsrahulvinod@gmail.com">itsrahulvinod@gmail.com</a></div>
+    <div><a href="https://rahulvinod.in" target="_blank">rahulvinod.in</a> &ensp;—&ensp; <a href="https://linkedin.com/in/rahul-vinod" target="_blank">LinkedIn</a></div>
+    <div style="margin-top:1.2rem;font-size:0.58rem;color:var(--muted)">© 2025 Rahul Vinod — All rights reserved</div>
+  </div>
+</footer>
+
+<script>
+// CURSOR — uses transform instead of top/left for performance
+const cur = document.getElementById('cur');
+const ring = document.getElementById('cur-ring');
+let mx = 0, my = 0, rx = 0, ry = 0;
+
+document.addEventListener('mousemove', e => {
+  mx = e.clientX;
+  my = e.clientY;
+  cur.style.transform = `translate(calc(${mx}px - 50%), calc(${my}px - 50%))`;
+});
+
+(function tick() {
+  rx += (mx - rx) * 0.1;
+  ry += (my - ry) * 0.1;
+  ring.style.transform = `translate(calc(${rx}px - 50%), calc(${ry}px - 50%))`;
+  requestAnimationFrame(tick);
+})();
+
+document.querySelectorAll('a, button, .skill-card, .exp-year').forEach(el => {
+  el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
+  el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
+});
+
+// SCROLL ANIMATIONS
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.anim').forEach(el => io.observe(el));
+
+// EXPERIENCE TABS
+function showExp(el, id) {
+  document.querySelectorAll('.exp-year').forEach(y => y.classList.remove('active'));
+  document.querySelectorAll('.exp-entry').forEach(e => e.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+</script>
+</body>
+</html>
