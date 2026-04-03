@@ -1159,6 +1159,7 @@ function showExp(el, id) {
 
     if (pointer.active) {
       game.player.x += (pointer.x - game.player.x) * 0.18;
+      game.player.y += (pointer.y - game.player.y) * 0.18;
     } else {
       const targetEnemy = game.enemies.reduce((best, enemy) => {
         if (!best) return enemy;
@@ -1168,8 +1169,10 @@ function showExp(el, id) {
       }, null);
       const autoTargetX = targetEnemy ? targetEnemy.x : canvas.width / 2 + Math.sin(now * 0.0012) * 70;
       game.player.x += (autoTargetX - game.player.x) * 0.08;
+      game.player.y += ((canvas.height - 46) - game.player.y) * 0.08;
     }
     game.player.x = clamp(game.player.x, 18, canvas.width - 18);
+    game.player.y = clamp(game.player.y, canvas.height * 0.48, canvas.height - 22);
 
     game.fireTimer -= dt;
     if (game.fireTimer <= 0) {
@@ -1331,16 +1334,21 @@ function showExp(el, id) {
 
     if (pointer.active) {
       game.player.x += (pointer.x - game.player.x) * 0.16;
+      game.player.y += (pointer.y - game.player.y) * 0.16;
     } else {
       const threats = game.bullets.filter(bullet => bullet.y < game.player.y + 18 && bullet.y > game.player.y - 140);
       let dodgeTarget = canvas.width / 2 + Math.sin(now * 0.0011) * 86;
+      let dodgeTargetY = canvas.height - 52;
       if (threats.length) {
         const averageThreatX = threats.reduce((sum, bullet) => sum + bullet.x, 0) / threats.length;
         dodgeTarget = averageThreatX < game.player.x ? canvas.width - 62 : 62;
+        dodgeTargetY = threats.some(bullet => Math.abs(bullet.x - game.player.x) < 46) ? canvas.height - 88 : canvas.height - 52;
       }
       game.player.x += (dodgeTarget - game.player.x) * 0.075;
+      game.player.y += (dodgeTargetY - game.player.y) * 0.075;
     }
     game.player.x = clamp(game.player.x, 30, canvas.width - 30);
+    game.player.y = clamp(game.player.y, canvas.height * 0.44, canvas.height - 26);
 
     game.fireTimer -= dt;
     if (game.fireTimer <= 0) {
