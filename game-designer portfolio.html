@@ -305,6 +305,41 @@ nav a:hover { color: var(--accent); }
   color: var(--muted);
   line-height: 1.9;
 }
+.hero-arcade-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 1.1rem 1.1rem;
+}
+.hero-arcade-nav-copy {
+  font-size: 0.54rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.hero-arcade-actions {
+  display: flex;
+  gap: 0.55rem;
+}
+.hero-arcade-btn {
+  appearance: none;
+  border: 1px solid rgba(10,10,10,0.12);
+  background: rgba(255,255,255,0.62);
+  color: var(--ink);
+  width: 2.4rem;
+  height: 2.4rem;
+  font: inherit;
+  font-size: 0.95rem;
+  cursor: none;
+  transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.2s;
+}
+.hero-arcade-btn:hover {
+  background: var(--accent);
+  color: var(--off);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
 .hero-bottom {
   display: flex;
   justify-content: space-between;
@@ -763,13 +798,20 @@ footer {
     <div class="hero-arcade-screen" id="arcadeSurface">
       <canvas class="hero-arcade-canvas" id="arcadeCanvas" width="360" height="450" aria-label="Mini arcade shooter demo"></canvas>
       <div class="hero-arcade-overlay">
-        <div>Score<strong id="arcadeScore">000</strong></div>
-        <div>Shield<strong id="arcadeShield">03</strong></div>
+        <div><span id="arcadeMetricLeftLabel">Score</span><strong id="arcadeScore">000</strong></div>
+        <div><span id="arcadeMetricRightLabel">Shield</span><strong id="arcadeShield">03</strong></div>
       </div>
     </div>
     <div class="hero-arcade-copy">
-      <p>Auto pilot runs the encounter until your mouse enters the canvas. Then you steer the ship while it keeps firing.</p>
-      <div class="hero-arcade-meta">Auto Until Hover<br>Mouse To Steer</div>
+      <p id="arcadeDescription">Auto pilot runs the encounter until your mouse enters the canvas. Then you steer the ship while it keeps firing.</p>
+      <div class="hero-arcade-meta" id="arcadeMeta">Auto Until Hover<br>Mouse To Steer</div>
+    </div>
+    <div class="hero-arcade-nav">
+      <div class="hero-arcade-nav-copy"><span id="arcadeGameIndex">01</span> / 02 Games</div>
+      <div class="hero-arcade-actions">
+        <button class="hero-arcade-btn" id="arcadePrev" type="button" aria-label="Previous game">&#8592;</button>
+        <button class="hero-arcade-btn" id="arcadeNext" type="button" aria-label="Next game">&#8594;</button>
+      </div>
     </div>
   </aside>
 </section>
@@ -951,17 +993,25 @@ function showExp(el, id) {
   document.getElementById(id).classList.add('active');
 }
 
-// HERO ARCADE SHOOTER
+// HERO GAME CAROUSEL
 (() => {
   const canvas = document.getElementById('arcadeCanvas');
   const surface = document.getElementById('arcadeSurface');
   const scoreEl = document.getElementById('arcadeScore');
   const shieldEl = document.getElementById('arcadeShield');
   const stateEl = document.getElementById('arcadeState');
-  if (!canvas || !surface) return;
+  const titleEl = document.querySelector('.hero-arcade-title');
+  const descEl = document.getElementById('arcadeDescription');
+  const metaEl = document.getElementById('arcadeMeta');
+  const leftLabelEl = document.getElementById('arcadeMetricLeftLabel');
+  const rightLabelEl = document.getElementById('arcadeMetricRightLabel');
+  const indexEl = document.getElementById('arcadeGameIndex');
+  const prevBtn = document.getElementById('arcadePrev');
+  const nextBtn = document.getElementById('arcadeNext');
+  if (!canvas || !surface || !prevBtn || !nextBtn) return;
 
   const ctx = canvas.getContext('2d');
-  const pointer = { active: false, x: canvas.width / 2 };
+  const pointer = { active: false, x: canvas.width / 2, y: canvas.height * 0.75 };
   const stars = Array.from({ length: 36 }, () => ({
     x: Math.random() * canvas.width,
     y: Math.random() * canvas.height,
@@ -971,81 +1021,121 @@ function showExp(el, id) {
 
   let animationId = 0;
   let lastTime = 0;
+  let activeGameIndex = 0;
   let game;
 
-  function resetGame() {
-    game = {
-      player: { x: canvas.width / 2, y: canvas.height - 46, radius: 12, speed: 230 },
-      bullets: [],
-      enemies: [],
-      particles: [],
-      score: 0,
-      shield: 3,
-      spawnTimer: 0,
-      fireTimer: 0,
-      over: false,
-      rebootAt: 0
-    };
-    scoreEl.textContent = '000';
-    shieldEl.textContent = '03';
-    stateEl.textContent = 'Auto Pilot';
-  }
+  const gameConfigs = [
+    {
+      title: 'Orbit Breaker',
+      description: 'Auto pilot runs the encounter until your mouse enters the canvas. Then you steer the ship while it keeps firing.',
+      meta: 'Auto Until Hover<br>Mouse To Steer',
+      leftLabel: 'Score',
+      rightLabel: 'Shield',
+      metricRightDefault: '03',
+      createState() {
+        return {
+          type: 'shooter',
+          player: { x: canvas.width / 2, y: canvas.height - 46, radius: 12 },
+          bullets: [],
+          enemies: [],
+          particles: [],
+          score: 0,
+          shield: 3,
+          spawnTimer: 0,
+          fireTimer: 0,
+          over: false,
+          rebootAt: 0
+        };
+      }
+    },
+    {
+      title: 'Pattern Core',
+      description: 'A boss turret paints dodge lanes on auto pilot. Hover inside the card to weave through the pattern yourself.',
+      meta: 'Auto Until Hover<br>Mouse To Dodge',
+      leftLabel: 'Level',
+      rightLabel: 'Hull',
+      metricRightDefault: '03',
+      createState() {
+        return {
+          type: 'boss',
+          player: { x: canvas.width / 2, y: canvas.height - 52, radius: 12 },
+          boss: { x: canvas.width / 2, y: 92, drift: 0 },
+          bullets: [],
+          playerBullets: [],
+          shield: 3,
+          level: 1,
+          bossHp: 14,
+          bossHpMax: 14,
+          volleyTimer: 0.55,
+          fireTimer: 0.08,
+          flash: 0,
+          levelClearAt: 0,
+          particles: [],
+          over: false,
+          rebootAt: 0
+        };
+      }
+    }
+  ];
 
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
   }
 
-  function spawnEnemy() {
-    const radius = 10 + Math.random() * 10;
-    game.enemies.push({
-      x: 28 + Math.random() * (canvas.width - 56),
-      y: -24,
-      radius,
-      speed: 70 + Math.random() * 90,
-      sway: (Math.random() - 0.5) * 40,
-      phase: Math.random() * Math.PI * 2
-    });
-  }
-
-  function burst(x, y, color) {
-    for (let i = 0; i < 10; i += 1) {
+  function burst(x, y, color, amount = 10) {
+    for (let i = 0; i < amount; i += 1) {
       game.particles.push({
         x,
         y,
         vx: (Math.random() - 0.5) * 140,
         vy: (Math.random() - 0.5) * 140,
-        life: 0.4 + Math.random() * 0.4,
+        life: 0.35 + Math.random() * 0.45,
         color
       });
     }
   }
 
-  function setPointerPosition(clientX) {
-    const rect = canvas.getBoundingClientRect();
-    const scale = canvas.width / rect.width;
-    pointer.x = (clientX - rect.left) * scale;
-    pointer.active = true;
-    stateEl.textContent = 'Mouse Control';
+  function resetGame() {
+    const config = gameConfigs[activeGameIndex];
+    game = config.createState();
+    titleEl.textContent = config.title;
+    descEl.textContent = config.description;
+    metaEl.innerHTML = config.meta;
+    leftLabelEl.textContent = config.leftLabel;
+    rightLabelEl.textContent = config.rightLabel;
+    scoreEl.textContent = config.type === 'boss' ? '001' : '000';
+    shieldEl.textContent = config.metricRightDefault;
+    stateEl.textContent = 'Auto Pilot';
+    indexEl.textContent = String(activeGameIndex + 1).padStart(2, '0');
   }
 
-  surface.addEventListener('mousemove', e => setPointerPosition(e.clientX));
-  surface.addEventListener('mouseenter', e => setPointerPosition(e.clientX));
+  function setPointerPosition(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    pointer.x = (clientX - rect.left) * scaleX;
+    pointer.y = (clientY - rect.top) * scaleY;
+    pointer.active = true;
+    stateEl.textContent = game && !game.over ? 'Mouse Control' : 'Rebooting';
+  }
+
+  surface.addEventListener('mousemove', e => setPointerPosition(e.clientX, e.clientY));
+  surface.addEventListener('mouseenter', e => setPointerPosition(e.clientX, e.clientY));
   surface.addEventListener('mouseleave', () => {
     pointer.active = false;
-    stateEl.textContent = game && !game.over ? 'Auto Pilot' : 'Live Prototype';
+    stateEl.textContent = game && !game.over ? 'Auto Pilot' : 'Rebooting';
   });
-  surface.addEventListener('touchstart', e => {
-    const touch = e.touches[0];
-    if (!touch) return;
-    setPointerPosition(touch.clientX);
-  }, { passive: true });
-  surface.addEventListener('touchmove', e => {
-    const touch = e.touches[0];
-    if (!touch) return;
-    setPointerPosition(touch.clientX);
-  }, { passive: true });
 
-  function update(dt, now) {
+  function cycleGame(direction) {
+    activeGameIndex = (activeGameIndex + direction + gameConfigs.length) % gameConfigs.length;
+    pointer.active = false;
+    resetGame();
+  }
+
+  prevBtn.addEventListener('click', () => cycleGame(-1));
+  nextBtn.addEventListener('click', () => cycleGame(1));
+
+  function updateBackground(dt) {
     stars.forEach(star => {
       star.y += star.speed * dt;
       if (star.y > canvas.height) {
@@ -1053,7 +1143,15 @@ function showExp(el, id) {
         star.x = Math.random() * canvas.width;
       }
     });
+    game.particles.forEach(p => {
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.life -= dt;
+    });
+    game.particles = game.particles.filter(p => p.life > 0);
+  }
 
+  function updateShooter(dt, now) {
     if (game.over) {
       if (now >= game.rebootAt) resetGame();
       return;
@@ -1081,12 +1179,20 @@ function showExp(el, id) {
 
     game.spawnTimer -= dt;
     if (game.spawnTimer <= 0) {
-      spawnEnemy();
+      const radius = 10 + Math.random() * 10;
+      game.enemies.push({
+        x: 28 + Math.random() * (canvas.width - 56),
+        y: -24,
+        radius,
+        speed: 70 + Math.random() * 90,
+        sway: (Math.random() - 0.5) * 40,
+        phase: Math.random() * Math.PI * 2
+      });
       game.spawnTimer = 0.45 + Math.random() * 0.35;
     }
 
-    game.bullets.forEach(b => { b.y -= b.speed * dt; });
-    game.bullets = game.bullets.filter(b => b.y > -20);
+    game.bullets.forEach(bullet => { bullet.y -= bullet.speed * dt; });
+    game.bullets = game.bullets.filter(bullet => bullet.y > -20);
 
     game.enemies.forEach(enemy => {
       enemy.y += enemy.speed * dt;
@@ -1095,12 +1201,9 @@ function showExp(el, id) {
 
     for (let i = game.enemies.length - 1; i >= 0; i -= 1) {
       const enemy = game.enemies[i];
-
       for (let j = game.bullets.length - 1; j >= 0; j -= 1) {
         const bullet = game.bullets[j];
-        const dx = bullet.x - enemy.x;
-        const dy = bullet.y - enemy.y;
-        if (Math.hypot(dx, dy) < enemy.radius + 4) {
+        if (Math.hypot(bullet.x - enemy.x, bullet.y - enemy.y) < enemy.radius + 4) {
           burst(enemy.x, enemy.y, '#ff3c1e');
           game.enemies.splice(i, 1);
           game.bullets.splice(j, 1);
@@ -1113,12 +1216,10 @@ function showExp(el, id) {
 
     for (let i = game.enemies.length - 1; i >= 0; i -= 1) {
       const enemy = game.enemies[i];
-      const dx = enemy.x - game.player.x;
-      const dy = enemy.y - game.player.y;
-      const hitPlayer = Math.hypot(dx, dy) < enemy.radius + game.player.radius;
+      const hitPlayer = Math.hypot(enemy.x - game.player.x, enemy.y - game.player.y) < enemy.radius + game.player.radius;
       const missed = enemy.y - enemy.radius > canvas.height;
       if (hitPlayer) {
-        burst(enemy.x, enemy.y, hitPlayer ? '#f5f2eb' : '#c8a96e');
+        burst(enemy.x, enemy.y, '#f5f2eb');
         game.enemies.splice(i, 1);
         game.shield -= 1;
         shieldEl.textContent = String(Math.max(game.shield, 0)).padStart(2, '0');
@@ -1129,54 +1230,217 @@ function showExp(el, id) {
           break;
         }
       } else if (missed) {
-        burst(enemy.x, enemy.y, '#c8a96e');
+        burst(enemy.x, enemy.y, '#c8a96e', 6);
         game.enemies.splice(i, 1);
       }
     }
+  }
 
-    game.particles.forEach(p => {
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      p.life -= dt;
+  function startBossLevel(level) {
+    game.level = level > 10 ? 1 : level;
+    game.bossHpMax = 12 + game.level * 4;
+    game.bossHp = game.bossHpMax;
+    game.volleyTimer = 0.4;
+    game.fireTimer = 0.08;
+    game.levelClearAt = 0;
+    game.bullets = [];
+    game.playerBullets = [];
+    game.boss.drift = 0;
+    scoreEl.textContent = String(game.level).padStart(3, '0');
+    shieldEl.textContent = String(Math.max(game.shield, 0)).padStart(2, '0');
+    stateEl.textContent = pointer.active ? 'Mouse Control' : 'Auto Pilot';
+  }
+
+  function spawnBossVolley(now) {
+    const level = game.level;
+    const cx = game.boss.x;
+    const cy = game.boss.y + 18;
+    const addBullet = (x, y, vx, vy, radius = 5) => {
+      game.bullets.push({ x, y, vx, vy, radius });
+    };
+    const radial = (count, speed, offset = 0) => {
+      for (let i = 0; i < count; i += 1) {
+        const angle = offset + (Math.PI * 2 * i) / count;
+        addBullet(cx, cy, Math.cos(angle) * speed, Math.sin(angle) * speed, 4.5);
+      }
+    };
+
+    switch (level) {
+      case 1:
+        [-0.62, -0.28, 0, 0.28, 0.62].forEach(angle => addBullet(cx, cy, Math.sin(angle) * 24, Math.cos(angle) * 168));
+        break;
+      case 2:
+        [-0.54, -0.18, 0.18, 0.54].forEach((angle, i) => addBullet(cx + (i - 1.5) * 16, cy, Math.sin(angle) * 36, Math.cos(angle) * 186, 5.5));
+        addBullet(cx, cy, 0, 212, 6);
+        break;
+      case 3:
+        radial(8, 118, now * 0.0017);
+        break;
+      case 4:
+        for (let i = -3; i <= 3; i += 1) addBullet(cx + i * 14, cy, i * 10, 180 + Math.abs(i) * 8, 5);
+        break;
+      case 5:
+        for (let i = 0; i < 6; i += 1) {
+          const angle = -0.85 + i * 0.34;
+          addBullet(cx, cy, Math.sin(angle) * 124, Math.cos(angle) * 148, 4.5);
+        }
+        break;
+      case 6:
+        radial(10, 106, now * 0.0012);
+        addBullet(cx - 28, cy, -26, 210, 6);
+        addBullet(cx + 28, cy, 26, 210, 6);
+        break;
+      case 7:
+        for (let i = 0; i < 7; i += 1) {
+          const spread = -0.52 + i * 0.17;
+          addBullet(cx + Math.sin(now * 0.003) * 18, cy, Math.sin(spread) * 68, Math.cos(spread) * 194, 5);
+        }
+        break;
+      case 8:
+        for (let i = 0; i < 12; i += 1) {
+          const side = i % 2 === 0 ? -1 : 1;
+          addBullet(cx + side * 24, cy, side * (28 + i * 2), 146 + i * 6, 4.5);
+        }
+        break;
+      case 9:
+        radial(14, 112, now * 0.0024);
+        break;
+      case 10:
+        radial(16, 118, now * 0.002);
+        [-0.42, -0.16, 0.16, 0.42].forEach(angle => addBullet(cx, cy, Math.sin(angle) * 82, Math.cos(angle) * 230, 5.5));
+        break;
+      default:
+        break;
+    }
+  }
+
+  function updateBoss(dt, now) {
+    if (game.over) {
+      if (now >= game.rebootAt) resetGame();
+      return;
+    }
+
+    game.flash = Math.max(0, game.flash - dt);
+    if (game.levelClearAt) {
+      if (now >= game.levelClearAt) startBossLevel(game.level + 1);
+      return;
+    }
+
+    game.boss.drift += dt;
+    game.boss.x = canvas.width / 2 + Math.sin(game.boss.drift * (0.75 + game.level * 0.06)) * (48 + game.level * 3);
+
+    if (pointer.active) {
+      game.player.x += (pointer.x - game.player.x) * 0.16;
+    } else {
+      const threats = game.bullets.filter(bullet => bullet.y < game.player.y + 18 && bullet.y > game.player.y - 140);
+      let dodgeTarget = canvas.width / 2 + Math.sin(now * 0.0011) * 86;
+      if (threats.length) {
+        const averageThreatX = threats.reduce((sum, bullet) => sum + bullet.x, 0) / threats.length;
+        dodgeTarget = averageThreatX < game.player.x ? canvas.width - 62 : 62;
+      }
+      game.player.x += (dodgeTarget - game.player.x) * 0.075;
+    }
+    game.player.x = clamp(game.player.x, 30, canvas.width - 30);
+
+    game.fireTimer -= dt;
+    if (game.fireTimer <= 0) {
+      game.playerBullets.push({ x: game.player.x, y: game.player.y - 18, vy: -320, radius: 3.5 });
+      game.fireTimer = 0.085;
+    }
+
+    game.volleyTimer -= dt;
+    if (game.volleyTimer <= 0) {
+      spawnBossVolley(now);
+      game.volleyTimer = Math.max(0.18, 0.66 - game.level * 0.03);
+    }
+
+    game.bullets.forEach(bullet => {
+      bullet.x += bullet.vx * dt;
+      bullet.y += bullet.vy * dt;
     });
-    game.particles = game.particles.filter(p => p.life > 0);
+    game.playerBullets.forEach(bullet => {
+      bullet.y += bullet.vy * dt;
+    });
+    game.bullets = game.bullets.filter(bullet =>
+      bullet.y < canvas.height + 24 &&
+      bullet.y > -24 &&
+      bullet.x > -30 &&
+      bullet.x < canvas.width + 30
+    );
+    game.playerBullets = game.playerBullets.filter(bullet => bullet.y > -24);
+
+    for (let i = game.playerBullets.length - 1; i >= 0; i -= 1) {
+      const playerBullet = game.playerBullets[i];
+      for (let j = game.bullets.length - 1; j >= 0; j -= 1) {
+        const enemyBullet = game.bullets[j];
+        if (Math.hypot(playerBullet.x - enemyBullet.x, playerBullet.y - enemyBullet.y) < playerBullet.radius + enemyBullet.radius + 1) {
+          burst((playerBullet.x + enemyBullet.x) / 2, (playerBullet.y + enemyBullet.y) / 2, '#c8a96e', 6);
+          game.playerBullets.splice(i, 1);
+          game.bullets.splice(j, 1);
+          break;
+        }
+      }
+    }
+
+    const bossHitRadiusX = 34;
+    const bossHitRadiusY = 28;
+    for (let i = game.playerBullets.length - 1; i >= 0; i -= 1) {
+      const bullet = game.playerBullets[i];
+      const dx = Math.abs(bullet.x - game.boss.x);
+      const dy = Math.abs(bullet.y - (game.boss.y + 8));
+      if (dx < bossHitRadiusX && dy < bossHitRadiusY) {
+        game.playerBullets.splice(i, 1);
+        game.bossHp -= 1;
+        burst(bullet.x, bullet.y, '#ff3c1e', 4);
+        stateEl.textContent = pointer.active ? 'Core Pressure' : 'Auto Pilot';
+        if (game.bossHp <= 0) {
+          burst(game.boss.x, game.boss.y + 10, '#ff3c1e', 28);
+          burst(game.boss.x, game.boss.y + 10, '#c8a96e', 18);
+          game.levelClearAt = now + 850;
+          game.bullets = [];
+          game.playerBullets = [];
+          stateEl.textContent = game.level === 10 ? 'Loop Clear' : 'Level Clear';
+          break;
+        }
+      }
+    }
+
+    for (let i = game.bullets.length - 1; i >= 0; i -= 1) {
+      const bullet = game.bullets[i];
+      if (Math.hypot(bullet.x - game.player.x, bullet.y - game.player.y) < bullet.radius + game.player.radius) {
+        burst(bullet.x, bullet.y, '#f5f2eb', 12);
+        game.bullets.splice(i, 1);
+        game.shield -= 1;
+        shieldEl.textContent = String(Math.max(game.shield, 0)).padStart(2, '0');
+        game.flash = 0.24;
+        stateEl.textContent = 'System Stress';
+        if (game.shield <= 0) {
+          game.over = true;
+          game.rebootAt = now + 1600;
+          stateEl.textContent = 'Rebooting';
+        }
+      }
+    }
+
+    if (!pointer.active && !game.over && !game.levelClearAt) {
+      stateEl.textContent = 'Auto Pilot';
+    } else if (!game.over && !game.levelClearAt) {
+      stateEl.textContent = 'Mouse Control';
+    }
   }
 
-  function drawPlayer() {
-    ctx.save();
-    ctx.translate(game.player.x, game.player.y);
-    ctx.fillStyle = '#f5f2eb';
-    ctx.beginPath();
-    ctx.moveTo(0, -16);
-    ctx.lineTo(11, 12);
-    ctx.lineTo(0, 6);
-    ctx.lineTo(-11, 12);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.strokeStyle = '#ff3c1e';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(0, -10);
-    ctx.lineTo(0, 10);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  function render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
+  function drawBackground() {
     ctx.fillStyle = '#080808';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
     stars.forEach(star => {
       ctx.fillStyle = 'rgba(245,242,235,0.55)';
       ctx.fillRect(star.x, star.y, star.size, star.size * 1.8);
     });
-
     ctx.strokeStyle = 'rgba(200,169,110,0.1)';
     ctx.strokeRect(18.5, 18.5, canvas.width - 37, canvas.height - 37);
+  }
 
+  function renderShooter() {
     game.bullets.forEach(bullet => {
       ctx.fillStyle = '#ff3c1e';
       ctx.fillRect(bullet.x - 1.5, bullet.y - 10, 3, 14);
@@ -1195,14 +1459,23 @@ function showExp(el, id) {
       ctx.restore();
     });
 
-    game.particles.forEach(particle => {
-      ctx.fillStyle = particle.color;
-      ctx.globalAlpha = Math.max(particle.life, 0);
-      ctx.fillRect(particle.x, particle.y, 2.5, 2.5);
-      ctx.globalAlpha = 1;
-    });
-
-    drawPlayer();
+    ctx.save();
+    ctx.translate(game.player.x, game.player.y);
+    ctx.fillStyle = '#f5f2eb';
+    ctx.beginPath();
+    ctx.moveTo(0, -16);
+    ctx.lineTo(11, 12);
+    ctx.lineTo(0, 6);
+    ctx.lineTo(-11, 12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#ff3c1e';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, -10);
+    ctx.lineTo(0, 10);
+    ctx.stroke();
+    ctx.restore();
 
     if (game.over) {
       ctx.fillStyle = 'rgba(8,8,8,0.58)';
@@ -1217,16 +1490,131 @@ function showExp(el, id) {
     }
   }
 
+  function renderBoss(now) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.beginPath();
+    ctx.moveTo(34, canvas.height - 78);
+    ctx.lineTo(canvas.width - 34, canvas.height - 78);
+    ctx.stroke();
+
+    const bossGlow = 18 + Math.sin(now * 0.004) * 4;
+    ctx.fillStyle = 'rgba(255,60,30,0.14)';
+    ctx.beginPath();
+    ctx.arc(game.boss.x, game.boss.y, bossGlow + 18, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#c8a96e';
+    ctx.beginPath();
+    ctx.moveTo(game.boss.x, game.boss.y - 22);
+    ctx.lineTo(game.boss.x + 34, game.boss.y + 10);
+    ctx.lineTo(game.boss.x + 16, game.boss.y + 34);
+    ctx.lineTo(game.boss.x - 16, game.boss.y + 34);
+    ctx.lineTo(game.boss.x - 34, game.boss.y + 10);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = '#080808';
+    ctx.fillRect(game.boss.x - 12, game.boss.y + 2, 24, 8);
+    ctx.fillStyle = '#ff3c1e';
+    ctx.fillRect(game.boss.x - 20, game.boss.y + 22, 40, 6);
+
+    ctx.strokeStyle = 'rgba(245,242,235,0.18)';
+    ctx.strokeRect(canvas.width / 2 - 52, 34, 104, 8);
+    ctx.fillStyle = '#ff3c1e';
+    ctx.fillRect(canvas.width / 2 - 52, 34, 104 * (game.bossHp / game.bossHpMax), 8);
+
+    game.bullets.forEach(bullet => {
+      ctx.fillStyle = '#f5f2eb';
+      ctx.beginPath();
+      ctx.arc(bullet.x, bullet.y, bullet.radius, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    game.playerBullets.forEach(bullet => {
+      ctx.fillStyle = '#ff3c1e';
+      ctx.fillRect(bullet.x - 1.5, bullet.y - 8, 3, 10);
+    });
+
+    ctx.save();
+    ctx.translate(game.player.x, game.player.y);
+    ctx.fillStyle = '#f5f2eb';
+    ctx.beginPath();
+    ctx.moveTo(0, -16);
+    ctx.lineTo(11, 12);
+    ctx.lineTo(0, 6);
+    ctx.lineTo(-11, 12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#ff3c1e';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, -10);
+    ctx.lineTo(0, 10);
+    ctx.stroke();
+    ctx.restore();
+
+    if (game.flash > 0) {
+      ctx.save();
+      ctx.globalAlpha = game.flash / 0.24;
+      ctx.fillStyle = 'rgba(255,255,255,0.18)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.restore();
+    }
+
+    if (game.levelClearAt && !game.over) {
+      ctx.fillStyle = 'rgba(8,8,8,0.38)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#f5f2eb';
+      ctx.font = '28px "Bebas Neue"';
+      ctx.textAlign = 'center';
+      ctx.fillText(game.level === 10 ? 'PATTERN LOOP CLEAR' : `LEVEL ${game.level} DOWN`, canvas.width / 2, canvas.height / 2 - 4);
+      ctx.fillStyle = 'rgba(245,242,235,0.72)';
+      ctx.font = '11px "DM Mono"';
+      ctx.fillText(game.level === 10 ? 'restarting sequence...' : 'loading next pattern...', canvas.width / 2, canvas.height / 2 + 20);
+    }
+
+    if (game.over) {
+      ctx.fillStyle = 'rgba(8,8,8,0.58)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#f5f2eb';
+      ctx.font = '28px "Bebas Neue"';
+      ctx.textAlign = 'center';
+      ctx.fillText('CORE BREACH', canvas.width / 2, canvas.height / 2 - 4);
+      ctx.fillStyle = 'rgba(245,242,235,0.72)';
+      ctx.font = '11px "DM Mono"';
+      ctx.fillText('resetting pattern...', canvas.width / 2, canvas.height / 2 + 20);
+    }
+  }
+
+  function renderParticles() {
+    game.particles.forEach(particle => {
+      ctx.fillStyle = particle.color;
+      ctx.globalAlpha = Math.max(particle.life, 0);
+      ctx.fillRect(particle.x, particle.y, 2.5, 2.5);
+      ctx.globalAlpha = 1;
+    });
+  }
+
   function frame(now) {
     if (!lastTime) lastTime = now;
     const dt = Math.min((now - lastTime) / 1000, 0.032);
     lastTime = now;
-    update(dt, now);
-    render();
+
+    updateBackground(dt);
+    if (game.type === 'shooter') updateShooter(dt, now);
+    else updateBoss(dt, now);
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBackground();
+    if (game.type === 'shooter') renderShooter();
+    else renderBoss(now);
+    renderParticles();
+
     animationId = requestAnimationFrame(frame);
   }
 
   resetGame();
+  if (game.type === 'boss') startBossLevel(1);
+
   animationId = requestAnimationFrame(frame);
 
   document.addEventListener('visibilitychange', () => {
