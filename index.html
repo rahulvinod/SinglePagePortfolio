@@ -4,6 +4,26 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rahul Vinod — Senior Game Designer</title>
+<script>
+window.GA_MEASUREMENT_ID = 'G-XTML6PCHG5';
+</script>
+<script>
+(() => {
+  const measurementId = window.GA_MEASUREMENT_ID;
+  if (!measurementId || measurementId === 'G-XXXXXXXXXX') return;
+
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = window.gtag || function gtag(){ dataLayer.push(arguments); };
+
+  const gaScript = document.createElement('script');
+  gaScript.async = true;
+  gaScript.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(measurementId)}`;
+  document.head.appendChild(gaScript);
+
+  gtag('js', new Date());
+  gtag('config', measurementId);
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Playfair+Display:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
@@ -958,6 +978,61 @@ footer {
 </footer>
 
 <script>
+function trackEvent(eventName, params = {}) {
+  if (typeof window.gtag !== 'function') return;
+  window.gtag('event', eventName, params);
+}
+
+(() => {
+  const trackedSections = new Set();
+  const sectionObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const sectionId = entry.target.id || entry.target.tagName.toLowerCase();
+      if (trackedSections.has(sectionId)) return;
+      trackedSections.add(sectionId);
+      trackEvent('section_view', {
+        section_id: sectionId,
+        page_path: window.location.pathname
+      });
+    });
+  }, { threshold: 0.55 });
+
+  document.querySelectorAll('section[id], footer[id]').forEach(section => sectionObserver.observe(section));
+
+  document.addEventListener('click', event => {
+    const link = event.target.closest('a');
+    if (!link) return;
+
+    const href = link.getAttribute('href') || '';
+    const label = (link.textContent || '').trim() || href;
+
+    if (href.startsWith('#')) {
+      trackEvent('navigation_click', {
+        link_text: label,
+        target_section: href.slice(1)
+      });
+      return;
+    }
+
+    if (href.startsWith('mailto:')) {
+      trackEvent('contact_click', {
+        contact_method: 'email',
+        contact_target: href.replace('mailto:', '')
+      });
+      return;
+    }
+
+    if (link.origin !== window.location.origin) {
+      trackEvent('outbound_click', {
+        link_text: label,
+        destination: link.href
+      });
+    }
+  });
+})();
+</script>
+<script>
 // CURSOR — uses transform instead of top/left for performance
 const cur = document.getElementById('cur');
 const ring = document.getElementById('cur-ring');
@@ -1012,6 +1087,7 @@ function showExp(el, id) {
   const indexEl = document.getElementById('arcadeGameIndex');
   const prevBtn = document.getElementById('arcadePrev');
   const nextBtn = document.getElementById('arcadeNext');
+  let arcadeTracked = false;
   if (!canvas || !surface || !prevBtn || !nextBtn) return;
 
   const ctx = canvas.getContext('2d');
@@ -1120,6 +1196,12 @@ function showExp(el, id) {
     pointer.x = (clientX - rect.left) * scaleX;
     pointer.y = (clientY - rect.top) * scaleY;
     pointer.active = true;
+    if (!arcadeTracked) {
+      arcadeTracked = true;
+      trackEvent('arcade_interaction_start', {
+        game_title: gameConfigs[activeGameIndex].title
+      });
+    }
     stateEl.textContent = game && !game.over ? 'Mouse Control' : 'Rebooting';
   }
 
@@ -1134,6 +1216,10 @@ function showExp(el, id) {
     activeGameIndex = (activeGameIndex + direction + gameConfigs.length) % gameConfigs.length;
     pointer.active = false;
     resetGame();
+    trackEvent('arcade_cycle', {
+      game_title: gameConfigs[activeGameIndex].title,
+      direction: direction > 0 ? 'next' : 'previous'
+    });
   }
 
   prevBtn.addEventListener('click', () => cycleGame(-1));
@@ -1642,3 +1728,4 @@ function showExp(el, id) {
 </script>
 </body>
 </html>
+
